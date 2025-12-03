@@ -1,7 +1,8 @@
 [project]
 name = "odoo-addons-oca-product-attribute"
-version = "18.0.20251029.0"
+version = "18.0.20251130.1"
 dependencies = [
+    "odoo-addon-product_abc_classification==18.0.*",
     "odoo-addon-product_assortment==18.0.*",
     "odoo-addon-product_attachment_zipped_download==18.0.*",
     "odoo-addon-product_attribute_archive==18.0.*",
@@ -16,6 +17,7 @@ dependencies = [
     "odoo-addon-product_category_tag==18.0.*",
     "odoo-addon-product_category_type==18.0.*",
     "odoo-addon-product_category_uom==18.0.*",
+    "odoo-addon-product_code_mandatory==18.0.*",
     "odoo-addon-product_code_unique==18.0.*",
     "odoo-addon-product_company_default==18.0.*",
     "odoo-addon-product_cost_security==18.0.*",
@@ -56,6 +58,7 @@ dependencies = [
     "odoo-addon-product_secondary_unit==18.0.*",
     "odoo-addon-product_sequence==18.0.*",
     "odoo-addon-product_set==18.0.*",
+    "odoo-addon-product_simple_seasonality==18.0.*",
     "odoo-addon-product_state==18.0.*",
     "odoo-addon-product_state_sale==18.0.*",
     "odoo-addon-product_state_stock_base==18.0.*",
