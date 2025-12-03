@@ -63,8 +63,8 @@ class ProductSecondaryUnitMixin(models.AbstractModel):
         
         The secondary unit factor is always relative to the product's base UOM.
         When the line UOM differs from the product UOM, we need to:
-        1. Convert from line UOM to product UOM (using UOM category conversion)
-        2. Then apply the secondary unit factor (which is relative to product UOM)
+        1. If line UOM and secondary UOM are in the same category, convert directly
+        2. Otherwise, convert from line UOM to product UOM, then apply secondary factor
         """
         uom_line = self._get_uom_line()
         product_uom = self.product_id[self._product_uom_field]
@@ -74,25 +74,43 @@ class ProductSecondaryUnitMixin(models.AbstractModel):
         if product_uom == uom_line:
             return self.secondary_uom_id.factor
         
-        # Check if line UOM and product UOM are in the same category
-        same_category = uom_line.category_id == product_uom.category_id
+        # Check if line UOM and secondary UOM are in the same category
+        same_category_line_secondary = uom_line.category_id == secondary_uom.category_id
         
-        if same_category:
-            # Both are in the same category, use Odoo's conversion method
-            # Convert 1 unit of line UOM to product UOM
-            # The result tells us how many product UOM units are in 1 line UOM unit
-            qty_in_product_uom = uom_line._compute_quantity(
+        if same_category_line_secondary:
+            # Line UOM and secondary UOM are in the same category
+            # Convert directly from line UOM to secondary UOM
+            # This gives us how many secondary UOM units are in 1 line UOM unit
+            # Example: 1 Maple (30 huevos) -> Huevo = 30
+            qty_in_secondary_uom = uom_line._compute_quantity(
                 qty=1.0,
-                to_unit=product_uom,
+                to_unit=secondary_uom,
                 round=False,
             )
-            # The secondary unit factor is relative to product UOM
-            # So we multiply: (line UOM -> product UOM) * (product UOM -> secondary UOM)
-            factor = qty_in_product_uom * self.secondary_uom_id.factor
+            # The factor is used in division: secondary_uom_qty = qty_line / factor
+            # So if 1 line UOM = qty_in_secondary_uom * secondary UOM,
+            # then factor = 1 / qty_in_secondary_uom
+            # Example: 1 Maple = 30 Huevos, so factor = 1/30
+            # Then: secondary_uom_qty = 1 Maple / (1/30) = 30 Huevos ✓
+            factor = 1.0 / qty_in_secondary_uom if qty_in_secondary_uom else 1.0
         else:
-            # Different categories, use the original logic (multiply factors)
-            # This maintains backward compatibility for cases with different categories
-            factor = self.secondary_uom_id.factor * uom_line.factor
+            # Line UOM and secondary UOM are in different categories
+            # Check if line UOM and product UOM are in the same category
+            same_category_line_product = uom_line.category_id == product_uom.category_id
+            
+            if same_category_line_product:
+                # Convert from line UOM to product UOM, then apply secondary factor
+                qty_in_product_uom = uom_line._compute_quantity(
+                    qty=1.0,
+                    to_unit=product_uom,
+                    round=False,
+                )
+                # The secondary unit factor is relative to product UOM
+                factor = qty_in_product_uom * self.secondary_uom_id.factor
+            else:
+                # Different categories, use the original logic (multiply factors)
+                # This maintains backward compatibility for cases with different categories
+                factor = self.secondary_uom_id.factor * uom_line.factor
         
         return factor
 
